@@ -1,0 +1,25 @@
+name: '0.0$(Rev:.r)'
+variables:
+    organization: 
+    AzureDevOpsProjectID: 
+    secureFileName: 
+    secureFileFolder:
+trigger:
+- none
+pool:
+  vmImage: macos-13
+steps:
+- script: |
+    name="Name of file" #update here
+    token="$(System.AccessToken)"
+    base_url="https://dev.azure.com/arjunbetageri/IOS-CICD/_apis"
+    echo "Check if secure file $name exists"
+    existing_id="$(curl --fail -s -L -u ":${token}" "${base_url}/distributedtask/securefiles?api-version=5.0-preview.1" | jq -r ".value[] | select(.name == \"$name\").id " )"
+    if [ -n "$existing_id" ]; then
+      echo "Delete existing secure file: $existing_id"
+      curl --fail -v -L -X DELETE -u ":${token}" "${base_url}/distributedtask/securefiles/$existing_id?api-version=5.0-preview.1"
+    fi
+    echo "Uploading secure file as: $name"
+    curl --data-raw "@${secureFileFolder}" -u ":${token}" --fail -v -L -X POST -H "Content-Type: application/octet-stream" "${base_url}/distributedtask/securefiles?api-version=5.0-preview.1&name=${name}"
+  displayName: 'upload delete a multi-line script'
+
